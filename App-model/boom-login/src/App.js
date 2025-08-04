@@ -141,7 +141,6 @@ function App() {
   const [password, setPassword] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isErrorState, setIsErrorState] = useState(false);
-  const [isFaceInOval, setIsFaceInOval] = useState(false);
   const intervalIdRef = useRef(null);
 
   useEffect(() => {
@@ -204,49 +203,6 @@ function App() {
       };
       getCameraStream();
     }
-    
-    if (appState === 'camera' && videoRef.current) {
-      intervalIdRef.current = setInterval(async () => {
-        if (videoRef.current.videoWidth === 0) return;
-        
-        try {
-          const detections = await faceapi
-            .detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions());
-          
-          if (detections) {
-            const faceBox = detections.box;
-            const videoWidth = videoRef.current.videoWidth;
-            const videoHeight = videoRef.current.videoHeight;
-            
-            const ovalWidth = videoWidth * 0.4;
-            const ovalHeight = videoHeight * 0.7;
-            const ovalCenterX = videoWidth / 2;
-            const ovalCenterY = videoHeight / 2;
-            
-            const isCentered = Math.abs(faceBox.x + faceBox.width / 2 - ovalCenterX) < ovalWidth * 0.2;
-            const isVerticallyCentered = Math.abs(faceBox.y + faceBox.height / 2 - ovalCenterY) < ovalHeight * 0.2;
-            const isSizedCorrectly = faceBox.width > ovalWidth * 0.5 && faceBox.width < ovalWidth * 1.1;
-
-            if (isCentered && isVerticallyCentered && isSizedCorrectly) {
-              setIsFaceInOval(true);
-            } else {
-              setIsFaceInOval(false);
-            }
-          } else {
-            setIsFaceInOval(false);
-          }
-        } catch (error) {
-          console.error('Face detection loop error:', error);
-          setIsFaceInOval(false);
-        }
-      }, 500);
-    }
-
-    return () => {
-      if (intervalIdRef.current) {
-        clearInterval(intervalIdRef.current);
-      }
-    };
   }, [appState, cameraStream]);
 
   const captureAndMemeifyPhoto = async () => {
@@ -489,7 +445,7 @@ function App() {
           {appState === 'camera' && (
             <div className="camera-section">
               <div 
-                className={`camera-preview ${isFaceInOval ? 'valid-face' : ''}`}
+                className="camera-preview"
               >
                 <video 
                   ref={videoRef} 
@@ -498,13 +454,10 @@ function App() {
                   playsInline
                   className="camera-feed"
                 />
-                <div className="camera-oval-overlay"></div>
                 <div className="camera-overlay">
-                  <p>Position your face in the frame</p>
                   <button 
                     className="capture-btn"
                     onClick={captureAndMemeifyPhoto}
-                    disabled={!isFaceInOval}
                   >
                     CAPTURE
                   </button>
